@@ -19,6 +19,8 @@ package io.netty.buffer;
 import io.netty.util.internal.LongCounter;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -30,6 +32,8 @@ import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 import static java.lang.Math.max;
 
 abstract class PoolArena<T> implements PoolArenaMetric {
+    static final InternalLogger logger = InternalLoggerFactory.getInstance(PoolArena.class);
+
     static final boolean HAS_UNSAFE = PlatformDependent.hasUnsafe();
 
     enum SizeClass {
@@ -224,6 +228,9 @@ abstract class PoolArena<T> implements PoolArenaMetric {
                 return;
             }
             synchronized (this) {
+                if (logger.isDebugEnabled()) {
+                    logger.debug("allocate normal chunk");
+                }
                 allocateNormal(buf, reqCapacity, normCapacity, cache);
                 ++allocationsNormal;
             }
@@ -275,6 +282,9 @@ abstract class PoolArena<T> implements PoolArenaMetric {
             SizeClass sizeClass = sizeClass(normCapacity);
             if (cache != null && cache.add(this, chunk, nioBuffer, handle, normCapacity, sizeClass)) {
                 // cached so not free it.
+                if (logger.isDebugEnabled()){
+                    logger.debug(" using cache while releasing a Chunk");
+                }
                 return;
             }
 
@@ -298,12 +308,21 @@ abstract class PoolArena<T> implements PoolArenaMetric {
                 switch (sizeClass) {
                     case Normal:
                         ++deallocationsNormal;
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("deallocte normal");
+                        }
                         break;
                     case Small:
                         ++deallocationsSmall;
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("deallocte small");
+                        }
                         break;
                     case Tiny:
                         ++deallocationsTiny;
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("deallocte tiny");
+                        }
                         break;
                     default:
                         throw new Error();
@@ -313,6 +332,9 @@ abstract class PoolArena<T> implements PoolArenaMetric {
         }
         if (destroyChunk) {
             // destroyChunk not need to be called while holding the synchronized lock.
+            if (logger.isDebugEnabled()) {
+                logger.debug( "destroy chunk");
+            }
             destroyChunk(chunk);
         }
     }

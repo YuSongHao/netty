@@ -16,6 +16,9 @@
 
 package io.netty.buffer;
 
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -104,6 +107,7 @@ import java.util.Deque;
  * depthMap[id]= x  indicates that the first node which is free to be allocated is at depth x (from root)
  */
 final class PoolChunk<T> implements PoolChunkMetric {
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(PoolChunk.class);
 
     private static final int INTEGER_SIZE_MINUS_ONE = Integer.SIZE - 1;
 
@@ -395,6 +399,9 @@ final class PoolChunk<T> implements PoolChunkMetric {
 
         if (nioBuffer != null && cachedNioBuffers != null &&
                 cachedNioBuffers.size() < PooledByteBufAllocator.DEFAULT_MAX_CACHED_BYTEBUFFERS_PER_CHUNK) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("cache NIO Buffer");
+            }
             cachedNioBuffers.offer(nioBuffer);
         }
     }
