@@ -17,6 +17,8 @@
 package io.netty.buffer;
 
 import io.netty.util.internal.ObjectPool.Handle;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,7 +29,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.ScatteringByteChannel;
 
 abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
-
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(PooledByteBuf.class);
     private final Handle<PooledByteBuf<T>> recyclerHandle;
 
     protected PoolChunk<T> chunk;
@@ -168,6 +170,9 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
             final long handle = this.handle;
             this.handle = -1;
             memory = null;
+            if (logger.isDebugEnabled()) {
+                logger.debug("PooledByteBuf deallocating");
+            }
             chunk.arena.free(chunk, tmpNioBuf, handle, maxLength, cache);
             tmpNioBuf = null;
             chunk = null;

@@ -17,6 +17,8 @@
 package io.netty.buffer;
 
 import io.netty.util.internal.StringUtil;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +30,7 @@ import static java.lang.Math.*;
 import java.nio.ByteBuffer;
 
 final class PoolChunkList<T> implements PoolChunkListMetric {
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(PoolChunkList.class);
     private static final Iterator<PoolChunkMetric> EMPTY_METRICS = Collections.<PoolChunkMetric>emptyList().iterator();
     private final PoolArena<T> arena;
     private final PoolChunkList<T> nextList;
@@ -119,6 +122,9 @@ final class PoolChunkList<T> implements PoolChunkListMetric {
         chunk.free(handle, nioBuffer);
         if (chunk.freeBytes > freeMaxThreshold) {
             remove(chunk);
+            if (logger.isDebugEnabled()) {
+                logger.debug("remove chunk from chunklist");
+            }
             // Move the PoolChunk down the PoolChunkList linked-list.
             return move0(chunk);
         }
