@@ -398,10 +398,10 @@ final class PoolChunk<T> implements PoolChunkMetric {
 
         if (nioBuffer != null && cachedNioBuffers != null &&
                 cachedNioBuffers.size() < PooledByteBufAllocator.DEFAULT_MAX_CACHED_BYTEBUFFERS_PER_CHUNK) {
-            cachedNioBuffers.offer(nioBuffer);
             if (logger.isDebugEnabled()) {
                 logger.debug("cache NIO Buffer");
             }
+            cachedNioBuffers.offer(nioBuffer);
         }
     }
 
