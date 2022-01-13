@@ -19,6 +19,7 @@ package io.netty.buffer;
 import io.netty.util.internal.ObjectPool.Handle;
 import io.netty.util.internal.logging.InternalLogger;
 import io.netty.util.internal.logging.InternalLoggerFactory;
+import org.apache.commons.lang.RandomStringUtils;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -171,12 +172,16 @@ abstract class PooledByteBuf<T> extends AbstractReferenceCountedByteBuf {
             this.handle = -1;
             memory = null;
             if (logger.isDebugEnabled()) {
-                logger.debug("PooledByteBuf deallocating");
+                logger.debug("PooledByteBuf real deallocating");
             }
             chunk.arena.free(chunk, tmpNioBuf, handle, maxLength, cache);
             tmpNioBuf = null;
             chunk = null;
             recycle();
+        } else {
+            if (logger.isDebugEnabled()) {
+                logger.debug("PooledByteBuf deallocating handle < 0 : " + handle);
+            }
         }
     }
 

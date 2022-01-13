@@ -461,7 +461,7 @@ final class PoolThreadCache {
                 // a finalizer.
                 entry.recycle();
             }
-
+            logger.error("finalizer : " + finalizer);
             chunk.arena.freeChunk(chunk, handle, sizeClass, nioBuffer, finalizer);
         }
 

@@ -123,7 +123,7 @@ final class PoolChunkList<T> implements PoolChunkListMetric {
         if (chunk.freeBytes > freeMaxThreshold) {
             remove(chunk);
             if (logger.isDebugEnabled()) {
-                logger.debug("remove chunk from chunklist");
+                logger.debug("remove chunk from chunklist : " + this);
             }
             // Move the PoolChunk down the PoolChunkList linked-list.
             return move0(chunk);

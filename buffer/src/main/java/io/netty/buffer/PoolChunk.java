@@ -378,9 +378,15 @@ final class PoolChunk<T> implements PoolChunkMetric {
     void free(long handle, ByteBuffer nioBuffer) {
         int memoryMapIdx = memoryMapIdx(handle);
         int bitmapIdx = bitmapIdx(handle);
-
+        if (logger.isDebugEnabled()) {
+            logger.debug("freeing chunk : " + this + ", handle : " + handle +
+                    ", memoryMapIdx : " + memoryMapIdx + ", bitmapIdx : " + bitmapIdx);
+        }
         if (bitmapIdx != 0) { // free a subpage
             PoolSubpage<T> subpage = subpages[subpageIdx(memoryMapIdx)];
+            if (logger.isDebugEnabled()) {
+                logger.debug("select subpage to free, subpage : " + subpage);
+            }
             assert subpage != null && subpage.doNotDestroy;
 
             // Obtain the head of the PoolSubPage pool that is owned by the PoolArena and synchronize on it.
@@ -395,6 +401,9 @@ final class PoolChunk<T> implements PoolChunkMetric {
         freeBytes += runLength(memoryMapIdx);
         setValue(memoryMapIdx, depth(memoryMapIdx));
         updateParentsFree(memoryMapIdx);
+        if (logger.isDebugEnabled()) {
+            logger.debug("freeBytes ++, value : " + freeBytes);
+        }
 
         if (nioBuffer != null && cachedNioBuffers != null &&
                 cachedNioBuffers.size() < PooledByteBufAllocator.DEFAULT_MAX_CACHED_BYTEBUFFERS_PER_CHUNK) {

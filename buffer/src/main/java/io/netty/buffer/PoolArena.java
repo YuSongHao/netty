@@ -184,6 +184,9 @@ abstract class PoolArena<T> implements PoolArenaMetric {
             if (tiny) { // < 512
                 if (cache.allocateTiny(this, buf, reqCapacity, normCapacity)) {
                     // was able to allocate out of the cache so move on
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("cache allocateTiny");
+                    }
                     return;
                 }
                 tableIdx = tinyIdx(normCapacity);
@@ -191,6 +194,9 @@ abstract class PoolArena<T> implements PoolArenaMetric {
             } else {
                 if (cache.allocateSmall(this, buf, reqCapacity, normCapacity)) {
                     // was able to allocate out of the cache so move on
+                    if (logger.isDebugEnabled()) {
+                        logger.debug("cache allocateSmall");
+                    }
                     return;
                 }
                 tableIdx = smallIdx(normCapacity);
@@ -259,8 +265,14 @@ abstract class PoolArena<T> implements PoolArenaMetric {
     private void incTinySmallAllocation(boolean tiny) {
         if (tiny) {
             allocationsTiny.increment();
+            if (logger.isDebugEnabled()) {
+                logger.debug(" allocte tiny : " + allocationsTiny.value());
+            }
         } else {
             allocationsSmall.increment();
+            if (logger.isDebugEnabled()) {
+                logger.debug(" allocte small : " + allocationsSmall.value());
+            }
         }
     }
 
@@ -273,6 +285,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
 
     void free(PoolChunk<T> chunk, ByteBuffer nioBuffer, long handle, int normCapacity, PoolThreadCache cache) {
         if (chunk.unpooled) {
+            logger.error("using unpooled");
             int size = chunk.chunkSize();
             destroyChunk(chunk);
             activeBytesHuge.add(-size);
@@ -281,9 +294,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
             SizeClass sizeClass = sizeClass(normCapacity);
             if (cache != null && cache.add(this, chunk, nioBuffer, handle, normCapacity, sizeClass)) {
                 // cached so not free it.
-                if (logger.isDebugEnabled()){
-                    logger.debug(" using cache while releasing a Chunk");
-                }
+                logger.error(" using cache while releasing a Chunk");
                 return;
             }
 
@@ -332,7 +343,7 @@ abstract class PoolArena<T> implements PoolArenaMetric {
         if (destroyChunk) {
             // destroyChunk not need to be called while holding the synchronized lock.
             if (logger.isDebugEnabled()) {
-                logger.debug( "destroy chunk");
+                logger.debug("destroy chunk");
             }
             destroyChunk(chunk);
         }

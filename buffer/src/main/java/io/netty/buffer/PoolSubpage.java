@@ -16,8 +16,11 @@
 
 package io.netty.buffer;
 
-final class PoolSubpage<T> implements PoolSubpageMetric {
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
 
+final class PoolSubpage<T> implements PoolSubpageMetric {
+    private static final InternalLogger logger = InternalLoggerFactory.getInstance(PoolSubpage.class);
     final PoolChunk<T> chunk;
     private final int memoryMapIdx;
     private final int runOffset;
@@ -104,7 +107,13 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
      *         {@code false} if this subpage is not used by its chunk and thus it's OK to be released.
      */
     boolean free(PoolSubpage<T> head, int bitmapIdx) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("free subpage, belongs to chunk : " +  chunk);
+        }
         if (elemSize == 0) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("elemSize == 0");
+            }
             return true;
         }
         int q = bitmapIdx >>> 6;
@@ -116,20 +125,32 @@ final class PoolSubpage<T> implements PoolSubpageMetric {
 
         if (numAvail ++ == 0) {
             addToPool(head);
+            if (logger.isDebugEnabled()) {
+                logger.debug("addToPool");
+            }
             return true;
         }
 
         if (numAvail != maxNumElems) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("numAvail != maxNumElems");
+            }
             return true;
         } else {
             // Subpage not in use (numAvail == maxNumElems)
             if (prev == next) {
                 // Do not remove if this subpage is the only one left in the pool.
+                if (logger.isDebugEnabled()) {
+                    logger.debug("prev == next, Do not remove if this subpage is the only one left in the pool.");
+                }
                 return true;
             }
 
             // Remove this subpage from the pool if there are other subpages left in the pool.
             doNotDestroy = false;
+            if (logger.isDebugEnabled()) {
+                logger.debug("accutally free a subpage, remove from the pool");
+            }
             removeFromPool();
             return false;
         }

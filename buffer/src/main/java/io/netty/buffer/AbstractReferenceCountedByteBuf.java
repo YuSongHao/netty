@@ -17,18 +17,24 @@
 package io.netty.buffer;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.concurrent.atomic.AtomicLong;
 
 import io.netty.util.internal.ReferenceCountUpdater;
+import io.netty.util.internal.logging.InternalLogger;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import org.apache.commons.lang.RandomStringUtils;
 
 /**
  * Abstract base class for {@link ByteBuf} implementations that count references.
  */
 public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
+    private static final InternalLogger logger =
+            InternalLoggerFactory.getInstance(AbstractReferenceCountedByteBuf.class);
     private static final long REFCNT_FIELD_OFFSET =
             ReferenceCountUpdater.getUnsafeOffset(AbstractReferenceCountedByteBuf.class, "refCnt");
     private static final AtomicIntegerFieldUpdater<AbstractReferenceCountedByteBuf> AIF_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(AbstractReferenceCountedByteBuf.class, "refCnt");
-
+    private String name = RandomStringUtils.randomAlphanumeric(16);
     private static final ReferenceCountUpdater<AbstractReferenceCountedByteBuf> updater =
             new ReferenceCountUpdater<AbstractReferenceCountedByteBuf>() {
         @Override
@@ -40,13 +46,20 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
             return REFCNT_FIELD_OFFSET;
         }
     };
-
     // Value might not equal "real" reference count, all access should be via the updater
     @SuppressWarnings("unused")
     private volatile int refCnt = updater.initialValue();
 
     protected AbstractReferenceCountedByteBuf(int maxCapacity) {
         super(maxCapacity);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("name : ").append(name).append(", ")
+                .append(super.toString());
+        return sb.toString();
     }
 
     @Override
@@ -77,11 +90,18 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
 
     @Override
     public ByteBuf retain() {
+        if (logger.isDebugEnabled()) {
+            logger.debug("ByteBuf : " + this + " retain, before : " + updater.refCnt(this));
+        }
         return updater.retain(this);
     }
 
     @Override
     public ByteBuf retain(int increment) {
+        if (logger.isDebugEnabled()) {
+            logger.debug("ByteBuf : " + this + " retain with increment" + increment
+                    + ", before : " + updater.refCnt(this));
+        }
         return updater.retain(this, increment);
     }
 
@@ -97,16 +117,34 @@ public abstract class AbstractReferenceCountedByteBuf extends AbstractByteBuf {
 
     @Override
     public boolean release() {
-        return handleRelease(updater.release(this));
+        boolean release = handleRelease(updater.release(this));
+        if (logger.isDebugEnabled()) {
+            logger.debug("ByteBuf : " + this + " release, after : " + updater.refCnt(this));
+            if (release) {
+                logger.debug("ByteBuf : " + this + " is going to deallocate ");
+            }
+        }
+        return release;
     }
 
     @Override
     public boolean release(int decrement) {
-        return handleRelease(updater.release(this, decrement));
+        boolean release = handleRelease(updater.release(this));
+        if (logger.isDebugEnabled()) {
+            logger.debug("ByteBuf : " + this + " release with decrement" + decrement
+                    + ", after : " + updater.refCnt(this));
+            if (release) {
+                logger.debug("ByteBuf is going to deallocate ");
+            }
+        }
+        return release;
     }
 
     private boolean handleRelease(boolean result) {
         if (result) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("handleRelease, deallocate ByteBuf : " + this);
+            }
             deallocate();
         }
         return result;
